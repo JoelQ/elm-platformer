@@ -10,11 +10,23 @@ type alias Model =
   { width : Float
   , height : Float
   , character : Character.Model
+  , platforms : List Platform
+  }
+
+type alias Platform =
+  { x : Float
+  , y : Float
+  , width : Float
+  , height : Float
   }
 
 initialModel : Model
 initialModel =
-  { width = 500, height = 500, character = Character.initialModel }
+  { width = 500
+  , height = 500
+  , character = Character.initialModel
+  , platforms = [ {x = 0, y = (-200), width = 200, height = 100} ]
+  }
 
 -- UPDATE
 
@@ -29,10 +41,16 @@ update action model =
 
 view : Model -> Element
 view model =
-  collage 200 200
-    [ rect 200 200 |> filled green
+  collage (round model.width) (round model.height)
+    ([ rect model.width model.height |> filled green
     , Character.view model.character
-    ]
+    ] ++ List.map viewPlatform model.platforms)
+
+viewPlatform : Platform -> Form
+viewPlatform platform =
+  rect platform.width platform.height
+    |> filled brown
+    |> move (platform.x, platform.y)
 
 -- SIGNALS
 

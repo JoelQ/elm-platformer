@@ -1,60 +1,29 @@
 import Graphics.Element exposing (..)
 import Graphics.Collage exposing (..)
 import Color exposing (..)
-import Keyboard
 import Time
-import Debug
+import Character
 
 -- MODEL
 
 type alias Model =
-  { vx : Float
-  , vy: Float
-  , x : Float
-  , y : Float
-  , width : Float
+  { width : Float
   , height : Float
+  , character : Character.Model
   }
 
 initialModel : Model
 initialModel =
-  { vx = 0
-  , vy = 0
-  , x = 0
-  , y = 0
-  , width = 50
-  , height = 100
-  }
+  { width = 500, height = 500, character = Character.initialModel }
 
 -- UPDATE
 
-type Action = Left | Right | Jump | Noop
+type alias Action = Character.Action
 
 update : Action -> Model -> Model
 update action model =
-  accelerate action model
-    |> gravity
-    |> applyMovement
-    |> Debug.watch "model"
+  { model | character <- Character.update action model.character }
 
-accelerate : Action -> Model -> Model
-accelerate action model =
-  case action of
-    Left -> { model | vx <- (-50) }
-    Right -> { model | vx <- 50 }
-    Jump -> { model | vy <- 500 }
-    Noop -> { model | vx <- 0 }
-
-gravity : Model -> Model
-gravity model =
-  { model | vy <- model.vy - (0.033 * 980) }
-
-applyMovement : Model -> Model
-applyMovement model =
-  { model
-    | x <- model.x + (0.033 * model.vx)
-    , y <- model.y + (0.033 * model.vy)
-  }
 
 -- VIEW
 
@@ -62,29 +31,14 @@ view : Model -> Element
 view model =
   collage 200 200
     [ rect 200 200 |> filled green
-    , rect model.width model.height |> filled blue |> move (model.x, model.y)
+    , Character.view model.character
     ]
 
--- Signals
-
-walking : Signal Action
-walking =
-  Signal.map arrowToAction Keyboard.arrows
-
-arrowToAction : { x : Int, y : Int } -> Action
-arrowToAction arrow =
-  case arrow.x of
-    1 -> Right
-    (-1) -> Left
-    _ -> Noop
-
-jumps : Signal Action
-jumps =
-  Signal.map (\jump -> if jump then Jump else Noop) Keyboard.space
+-- SIGNALS
 
 actions : Signal Action
 actions =
-  Signal.merge walking jumps |> Signal.sampleOn (Time.fps 30)
+  Signal.sampleOn (Time.fps 30) Character.actions
 
 models : Signal Model
 models =

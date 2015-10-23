@@ -44,13 +44,13 @@ update action bottom model =
     |> accelerate action
     |> preventCollisions bottom
     |> applyMovement
-    |> Debug.watch "model"
+    -- |> Debug.watch "model"
 
 accelerate : Action -> Model -> Model
 accelerate action model =
   case action of
-    Left -> { model | vx <- (-50) }
-    Right -> { model | vx <- 50 }
+    Left -> { model | vx <- (-100) }
+    Right -> { model | vx <- 100 }
     Jump -> { model | vy <- 500 }
     Noop -> { model | vx <- 0 }
 
@@ -69,39 +69,45 @@ preventCollision obstacle model =
     { model
     | vx <- if headingTowardsObjectX model obstacle then 0 else model.vx
     , vy <- if headingTowardsObjectY model obstacle then 0 else model.vy
-    , y <- if headingTowardsObjectY model obstacle then (obstacle.y + (model.height + obstacle.height) / 2) else model.y
+    , y <- if headingTowardsObjectY model obstacle then (obstacle.y + ((model.height + obstacle.height) / 2)) else model.y
+    , x <- if headingTowardsObjectX model obstacle then (obstacle.x + ((model.width + obstacle.width) / 2)) else model.x
     }
 
 colliding : Model -> Entity -> Bool
-colliding subject obstacle =
-  let
-      model = applyMovement subject
-      minimumCenterDistanceX = (obstacle.width + model.width) / 2
-      centerDistanceX = obstacle.x - model.x
-      minimumCenterDistanceY = (obstacle.height + model.height) / 2
-      centerDistanceY = obstacle.y - model.y
+colliding model obstacle =
+  let nextModel = applyMovement model
+      minimumCenterDistanceX = (obstacle.width + nextModel.width) / 2
+      centerDistanceX = obstacle.x - nextModel.x
+      minimumCenterDistanceY = (obstacle.height + nextModel.height) / 2
+      centerDistanceY = obstacle.y - nextModel.y
       overlapX = (abs centerDistanceX) < minimumCenterDistanceX
       overlapY = (abs centerDistanceY) < minimumCenterDistanceY
-      headingTowardsObstacleX = model.vx / (abs model.vx) == centerDistanceX / (abs centerDistanceX)
-      headingTowardsObstacleY = model.vy / (abs model.vy) == centerDistanceY / (abs centerDistanceY)
+      headingTowardsObstacleX = nextModel.vx / (abs nextModel.vx) == centerDistanceX / (abs centerDistanceX)
+      headingTowardsObstacleY = nextModel.vy / (abs nextModel.vy) == centerDistanceY / (abs centerDistanceY)
   in
      overlapX && overlapY && (headingTowardsObstacleX || headingTowardsObstacleY)
 
 headingTowardsObjectX :  Model -> Entity -> Bool
-headingTowardsObjectX subject obstacle =
-  let centerDistanceX = obstacle.x - model.x
-      model = applyMovement subject
+headingTowardsObjectX model obstacle =
+  let nextModel = applyMovement model
+      distanceNow = obstacle.x - model.x |> abs
+      distanceNext = obstacle.x - nextModel.x |> abs
+      minimumCenterDistanceY = (obstacle.height + model.height) / 2
+      centerDistanceY = obstacle.y - model.y |> abs
+      overlapY = centerDistanceY < minimumCenterDistanceY
   in
-    model.vx / (abs model.vx) == centerDistanceX / (abs centerDistanceX)
+     distanceNext < distanceNow  && overlapY |> Debug.watch "headingTowardsObjectX"
 
 headingTowardsObjectY :  Model -> Entity -> Bool
 headingTowardsObjectY model obstacle =
-  let minimumCenterDistanceX = (obstacle.width + model.width) / 2
-      centerDistanceX = obstacle.x - model.x
-      centerDistanceY = obstacle.y - model.y
-      overlapX = (abs centerDistanceX) < minimumCenterDistanceX
+  let nextModel = applyMovement model
+      distanceNow = obstacle.y - model.y |> abs
+      distanceNext = obstacle.y - nextModel.y |> abs
+      minimumCenterDistanceX = (obstacle.width + model.width) / 2
+      centerDistanceX = obstacle.x - model.x |> abs
+      overlapX = centerDistanceX < minimumCenterDistanceX
   in
-    (abs model.vy) > 0 && model.vy / (abs model.vy) == centerDistanceY / (abs centerDistanceY)
+     distanceNext < distanceNow  && overlapX |> Debug.watch "headingTowardsObjectY"
 
 applyMovement : Model -> Model
 applyMovement model =

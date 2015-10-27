@@ -40,19 +40,19 @@ initialModel =
 type Action = Left | Right | Jump | Noop
 
 update : Action -> List Entity -> Model -> Model
-update action bottom model =
+update action platforms model =
   gravity model
-    |> accelerate action
-    |> preventCollisions bottom
+    |> accelerate action platforms
+    |> preventCollisions platforms
     |> Collision.applyMovement
     |> Debug.watch "model"
 
-accelerate : Action -> Model -> Model
-accelerate action model =
+accelerate : Action -> List Entity -> Model -> Model
+accelerate action platforms model =
   case action of
     Left -> { model | vx <- (-100) }
     Right -> { model | vx <- 100 }
-    Jump -> { model | vy <- 500 }
+    Jump -> { model | vy <- if List.any (Collision.colliding model) platforms then 500 else model.vy }
     Noop -> { model | vx <- 0 }
 
 gravity : Model -> Model
@@ -61,7 +61,8 @@ gravity model =
 
 preventCollisions : List Entity -> Model -> Model
 preventCollisions obstacles model =
-  let collidingObstacles = List.filter (Collision.colliding model) obstacles |> Debug.watch "collisions"
+  let
+      collidingObstacles = List.filter (Collision.colliding model) obstacles |> Debug.watch "collisions"
   in
      List.foldl preventCollision model collidingObstacles
 
@@ -70,8 +71,12 @@ preventCollision obstacle model =
   let
       vx = if Collision.headingTowardsObjectX model obstacle then 0 else model.vx
       vy = if Collision.headingTowardsObjectY model obstacle then 0 else model.vy
-      y = if Collision.headingTowardsObjectY model obstacle then (obstacle.y + ((model.height + obstacle.height) / 2)) else model.y
-      x = if Collision.headingTowardsObjectX model obstacle then (obstacle.x + ((model.width + obstacle.width) / 2)) else model.x
+      yDistance = (model.height + obstacle.height) / 2
+      yDirection = (model.y - obstacle.y) / (abs (model.y - obstacle.y))
+      y = if Collision.headingTowardsObjectY model obstacle then (obstacle.y + yDistance * yDirection) else model.y
+      xDistance = (model.width + obstacle.width) / 2
+      xDirection = (model.x - obstacle.x) / (abs (model.x - obstacle.x))
+      x = if Collision.headingTowardsObjectX model obstacle then (obstacle.x + xDistance * xDirection) else model.x
   in
     { model | vx <- vx, vy <- vy, y <- y, x <- x }
 

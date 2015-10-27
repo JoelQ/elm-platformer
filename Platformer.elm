@@ -25,10 +25,14 @@ initialModel =
   { width = 500
   , height = 500
   , character = Character.initialModel
-  , platforms = [ {x = (-150), y = (-250), width = 200, height = 100} ]
+  , platforms =
+    [ {x = (-150), y = (-225), width = 200, height = 50}
+    , {x = 0, y = -100, width = 200, height = 50}
+    , {x = 150, y = 25, width = 200, height = 50}
+    ]
   }
 
-edges : Model ->List Platform
+edges : Model -> List Platform
 edges model =
   [ {x = 0, y = -(model.height/2 + 10), width = model.width, height = 20} ]
 

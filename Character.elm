@@ -18,13 +18,6 @@ type alias Model =
   , height : Float
   }
 
-type alias Entity =
-  { x : Float
-  , y : Float
-  , width : Float
-  , height : Float
-  }
-
 initialModel : Model
 initialModel =
   { vx = 0
@@ -39,7 +32,7 @@ initialModel =
 
 type Action = Left | Right | Jump | Noop
 
-update : Action -> List Entity -> Model -> Model
+update : Action -> List Collision.Object -> Model -> Model
 update action platforms model =
   gravity model
     |> accelerate action platforms
@@ -47,7 +40,7 @@ update action platforms model =
     |> Collision.applyMovement
     |> Debug.watch "model"
 
-accelerate : Action -> List Entity -> Model -> Model
+accelerate : Action -> List Collision.Object -> Model -> Model
 accelerate action platforms model =
   case action of
     Left -> { model | vx <- (-100) }
@@ -59,14 +52,14 @@ gravity : Model -> Model
 gravity model =
   { model | vy <- model.vy - (0.033 * 980) }
 
-preventCollisions : List Entity -> Model -> Model
+preventCollisions : List Collision.Object -> Model -> Model
 preventCollisions obstacles model =
   let
       collidingObstacles = List.filter (Collision.colliding model) obstacles |> Debug.watch "collisions"
   in
      List.foldl preventCollision model collidingObstacles
 
-preventCollision : Entity -> Model -> Model
+preventCollision : Collision.Object -> Model -> Model
 preventCollision obstacle model =
   let
       vx = if Collision.headingTowardsObjectX model obstacle then 0 else model.vx

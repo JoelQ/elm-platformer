@@ -1,8 +1,10 @@
 import Graphics.Element exposing (..)
 import Graphics.Collage exposing (..)
 import Color exposing (..)
+import Text exposing (..)
 import Time
 import Character
+import Collision
 
 -- MODEL
 
@@ -13,6 +15,7 @@ type alias Model =
   , platforms : List Platform
   , viewport : Viewport
   , goal : Goal
+  , gameWon : Bool
   }
 
 type alias Platform =
@@ -42,6 +45,7 @@ initialModel =
   , height = 500
   , viewport = { x = -125, y = 0, width = 500, height = 500 }
   , character = Character.initialModel
+  , gameWon = False
   , goal = { x = 350, y = -250, width = 50, height = 100 }
   , platforms =
     [ {x = (-150), y = (-225), width = 200, height = 50}
@@ -66,10 +70,14 @@ type alias Action = Character.Action
 
 update : Action -> Model -> Model
 update action model =
-  { model
-  | character <- Character.update action (model.platforms ++ (edges model) ++ [model.goal]) model.character
-  , viewport <- updateViewport model.character model.viewport
-  }
+  if model.gameWon then
+     model
+  else
+    { model
+    | character <- Character.update action (model.platforms ++ (edges model) ++ [model.goal]) model.character
+    , viewport <- updateViewport model.character model.viewport
+    , gameWon <- Collision.colliding model.character model.goal
+    }
 
 updateViewport : Character.Model -> Viewport -> Viewport
 updateViewport character viewport =
@@ -81,6 +89,13 @@ updateViewport character viewport =
 
 view : Model -> Element
 view model =
+  if model.gameWon then
+     victory model
+  else
+    renderWorld model
+
+renderWorld : Model -> Element
+renderWorld model =
   let background = rect model.viewport.width model.viewport.height
         |> filled green
       character = model.character
@@ -120,6 +135,21 @@ viewGoal goal =
   rect goal.width goal.height
     |> filled yellow
     |> move (goal.x, goal.y)
+
+victory : Model -> Element
+victory model =
+  let
+      fadedWorld = renderWorld model
+        |> toForm
+        |> alpha 0.5
+      victoryText = fromString "Victory!"
+        |> Text.height 40
+        |> centered
+        |> toForm
+  in
+   collage (round model.viewport.width) (round model.viewport.height)
+   [fadedWorld, victoryText]
+
 
 -- SIGNALS
 

@@ -11,6 +11,7 @@ type alias Model =
   , height : Float
   , character : Character.Model
   , platforms : List Platform
+  , viewport : Viewport
   }
 
 type alias Platform =
@@ -20,10 +21,18 @@ type alias Platform =
   , height : Float
   }
 
+type alias Viewport =
+  { x : Float
+  , y : Float
+  , width : Float
+  , height : Float
+  }
+
 initialModel : Model
 initialModel =
-  { width = 500
+  { width = 750
   , height = 500
+  , viewport = { x = -125, y = 0, width = 500, height = 500 }
   , character = Character.initialModel
   , platforms =
     [ {x = (-150), y = (-225), width = 200, height = 50}
@@ -42,16 +51,40 @@ type alias Action = Character.Action
 
 update : Action -> Model -> Model
 update action model =
-  { model | character <- Character.update action (model.platforms ++ (edges model)) model.character }
+  { model
+  | character <- Character.update action (model.platforms ++ (edges model)) model.character
+  , viewport <- updateViewport model.character model.viewport
+  }
+
+updateViewport : Character.Model -> Viewport -> Viewport
+updateViewport character viewport =
+  { viewport 
+  | x <- if (abs (character.x - viewport.x)) > 100 then character.x else viewport.x
+  }
 
 -- VIEW
 
 view : Model -> Element
 view model =
-  collage (round model.width) (round model.height)
-    ([ rect model.width model.height |> filled green
-    , Character.view model.character
-    ] ++ List.map viewPlatform model.platforms)
+  let background = rect model.viewport.width model.viewport.height
+        |> filled green
+      character = model.character
+        |> translateModelToViewport model.viewport
+        |> Character.view
+      platforms = model.platforms
+        |> List.map (translatePlatformToViewport model.viewport)
+        |> List.map viewPlatform
+  in
+    collage (round model.viewport.width) (round model.viewport.height)
+    ([background, character] ++ platforms)
+
+translateModelToViewport : Viewport -> Character.Model -> Character.Model
+translateModelToViewport viewport item =
+  { item | x <- item.x - viewport.x }
+
+translatePlatformToViewport : Viewport -> Platform -> Platform
+translatePlatformToViewport viewport item =
+  { item | x <- item.x - viewport.x }
 
 viewPlatform : Platform -> Form
 viewPlatform platform =

@@ -12,9 +12,17 @@ type alias Model =
   , character : Character.Model
   , platforms : List Platform
   , viewport : Viewport
+  , goal : Goal
   }
 
 type alias Platform =
+  { x : Float
+  , y : Float
+  , width : Float
+  , height : Float
+  }
+
+type alias Goal =
   { x : Float
   , y : Float
   , width : Float
@@ -34,6 +42,7 @@ initialModel =
   , height = 500
   , viewport = { x = -125, y = 0, width = 500, height = 500 }
   , character = Character.initialModel
+  , goal = { x = 350, y = -250, width = 50, height = 100 }
   , platforms =
     [ {x = (-150), y = (-225), width = 200, height = 50}
     , {x = 0, y = -100, width = 200, height = 50}
@@ -58,7 +67,7 @@ type alias Action = Character.Action
 update : Action -> Model -> Model
 update action model =
   { model
-  | character <- Character.update action (model.platforms ++ (edges model)) model.character
+  | character <- Character.update action (model.platforms ++ (edges model) ++ [model.goal]) model.character
   , viewport <- updateViewport model.character model.viewport
   }
 
@@ -80,9 +89,12 @@ view model =
       platforms = model.platforms
         |> List.map (translatePlatformToViewport model.viewport)
         |> List.map viewPlatform
+      goal = model.goal
+        |> translateGoalToViewport model.viewport
+        |> viewGoal
   in
     collage (round model.viewport.width) (round model.viewport.height)
-    ([background, character] ++ platforms)
+    ([background, character, goal] ++ platforms)
 
 translateModelToViewport : Viewport -> Character.Model -> Character.Model
 translateModelToViewport viewport item =
@@ -92,11 +104,22 @@ translatePlatformToViewport : Viewport -> Platform -> Platform
 translatePlatformToViewport viewport item =
   { item | x <- item.x - viewport.x }
 
+translateGoalToViewport : Viewport -> Goal -> Goal
+translateGoalToViewport viewport item =
+  { item | x <- item.x - viewport.x }
+
+
 viewPlatform : Platform -> Form
 viewPlatform platform =
   rect platform.width platform.height
     |> filled brown
     |> move (platform.x, platform.y)
+
+viewGoal : Goal -> Form
+viewGoal goal =
+  rect goal.width goal.height
+    |> filled yellow
+    |> move (goal.x, goal.y)
 
 -- SIGNALS
 

@@ -43,7 +43,13 @@ initialModel =
 
 edges : Model -> List Platform
 edges model =
-  [ {x = 0, y = -(model.height/2 + 10), width = model.width, height = 20} ]
+  [
+    { x = model.viewport.x
+    , y = -(model.viewport.height/2 + 10)
+    , width = model.viewport.width
+    , height = 20
+    }
+  ]
 
 -- UPDATE
 
